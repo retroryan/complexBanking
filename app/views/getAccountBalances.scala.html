@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+</head>
+
+<script src="http://code.jquery.com/jquery-1.7.2.js" type="text/javascript"></script>
+
+<script>
+
+    $(function () {
+
+        $("#blockingRetrieveSubmit").bind('click', function () {
+            retrieveAccountBalances("getAccountBalancesBlocking");
+        });
+
+        $("#asyncOneRetrieveSubmit").bind('click', function () {
+            retrieveAccountBalances("asyncOneGetAccountBalances");
+        });
+
+        $("#asyncTwoRetrieveSubmit").bind('click', function () {
+            retrieveAccountBalances("asyncTwoGetAccountBalances");
+        });
+
+        $("#asyncThreeRetrieveSubmit").bind('click', function () {
+            retrieveAccountBalances("asyncThreeGetAccountBalances");
+        });
+
+    });
+
+    function retrieveAccountBalances(retrieveUrl) {
+        var userId = $("#userId").val()
+
+        if (userId === "") {
+            alert("Please enter a user id.")
+            return
+        }
+
+        var userIdJson = JSON.stringify({userId: userId})
+        console.log("sending " + userIdJson)
+
+        var start = new Date().getTime();
+        $("#loadTime").empty()
+        $("#checkingAccountList").empty()
+        $("#savingAccountList").empty()
+        $("#moneyMarketAccountList").empty()
+
+
+        jqxhr = $.ajax({
+            url: "../" + retrieveUrl,
+            data: userIdJson,
+            contentType: "application/json",
+            type: "POST",
+            dataType: "json"
+        })
+
+        jqxhr.done(
+                function (data) {
+                    console.log("requested data =>" + data)
+
+                    //the json is a nested array, need to fix serialization from play
+                    //for now just get the first element in the array
+                    var checkingBalances = data.checking[0]
+                    checkingBalances.forEach(function (accountAndBalance) {
+                        $("#checkingAccountList").append("<li>" + accountAndBalance.accountId + " =>  " + accountAndBalance.balance + "</li>")
+                    })
+
+                    var savingsBalances = data.savings[0]
+                    savingsBalances.forEach(function (accountAndBalance) {
+                        $("#savingAccountList").append("<li>" + accountAndBalance.accountId + " =>  " + accountAndBalance.balance + "</li>")
+                    })
+
+
+                    var moneyMarketBalances = data.moneyMarket[0]
+                    moneyMarketBalances.forEach(function (accountAndBalance) {
+                        $("#moneyMarketAccountList").append("<li>" + accountAndBalance.accountId + " =>  " + accountAndBalance.balance + "</li>")
+                    })
+
+                    var end = new Date().getTime();
+                    var time = end - start;
+                    $("#loadTime").append(time)
+
+                })
+
+        //even thought the create tweet is working, it returns an error message
+        jqxhr.fail(
+                function (data, textStatus, errorThrown) {
+                    console.log("error:" + data)
+                })
+    }
+
+</script>
+
+
+<body>
+
+<H3>Enter User ID to Retrieve: <input type="text" id="userId" value="1"/></H3>
+<input type="submit" value="Blocking Retrieve" id="blockingRetrieveSubmit"/>
+<input type="submit" value="Async Retrieve - One " id="asyncOneRetrieveSubmit"/>
+<input type="submit" value="Async Retrieve - Two" id="asyncTwoRetrieveSubmit"/>
+<input type="submit" value="Async Retrieve - Three" id="asyncThreeRetrieveSubmit"/>
+
+<H3>Time to Load Account Balances: <span id="loadTime" /> milliseconds</H3>
+<H3>Checking Accounts</H3>
+<ul id="checkingAccountList">
+</ul>
+
+<H3>Savings Accounts</H3>
+<ul id="savingAccountList">
+</ul>
+
+<H3>Money Market Accounts</H3>
+<ul id="moneyMarketAccountList">
+</ul>
+
+</body>
+</html>
+
